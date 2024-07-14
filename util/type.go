@@ -9,7 +9,7 @@ type Message struct {
 }
 
 type QueueStorgae interface {
-	Send([]byte)
+	Save(string, []byte, string) error
 	Read() []Message
 	ReadWithOffset(string) []Message
 }

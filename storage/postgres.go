@@ -31,8 +31,8 @@ func NewPostgresClient(connectionUrl string, poolLimit int16) (*PostgresDbClient
 	}, nil
 }
 
-func (pgdb *PostgresDbClient) Save([]byte) {
-
+func (pgdb *PostgresDbClient) Save(string, []byte, string) error {
+	return nil
 }
 
 func (pgdb *PostgresDbClient) Read() []util.Message {
