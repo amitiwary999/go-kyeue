@@ -1,15 +1,12 @@
 package util
 
-import "encoding/json"
-
-type Message struct {
-	Id           string
-	Payload      json.RawMessage
-	ConsumeCount int
-}
+import (
+	model "github.com/amitiwary999/go-kyeue/model"
+)
 
 type QueueStorgae interface {
 	Save(string, []byte, string) error
-	Read() []Message
-	ReadWithOffset(string) []Message
+	Read(int, string) ([]model.Message, error)
+	ReadWithOffset(string, string) ([]model.Message, error)
+	ReadWithOffsetTime(string, string) ([]model.Message, error)
 }
