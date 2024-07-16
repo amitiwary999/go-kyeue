@@ -17,6 +17,11 @@ func NewQueueProducer(queue util.QueueStorgae) *queueProducer {
 	}
 }
 
+func (p *queueProducer) CreateChannel(queueName string) error {
+	/** TODO custom error handling */
+	return p.queue.CreateChannel(queueName)
+}
+
 func (p *queueProducer) Send(payload any, queueName string) error {
 	bp, err := json.Marshal(payload)
 	if err != nil {
