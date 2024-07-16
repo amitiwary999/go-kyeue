@@ -7,6 +7,5 @@ import (
 type QueueStorgae interface {
 	Save(string, []byte, string) error
 	Read(int, string) ([]model.Message, error)
-	ReadWithOffset(string, string) ([]model.Message, error)
-	ReadWithOffsetTime(string, string) ([]model.Message, error)
+	ReadPrevMessageOnLoad(string, string, string) ([]model.Message, error)
 }

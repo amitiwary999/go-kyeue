@@ -10,11 +10,12 @@ import (
 )
 
 type PostgresDbClient struct {
-	DB      *sql.DB
-	timeout int16
+	DB        *sql.DB
+	timeout   int16
+	dataLimit int16
 }
 
-func NewPostgresClient(connectionUrl string, poolLimit int16, timeout int16) (*PostgresDbClient, error) {
+func NewPostgresClient(connectionUrl string, poolLimit int16, timeout int16, dataLimit int16) (*PostgresDbClient, error) {
 	db, err := sql.Open("postgres", connectionUrl)
 	if err != nil {
 		return nil, err
@@ -29,8 +30,9 @@ func NewPostgresClient(connectionUrl string, poolLimit int16, timeout int16) (*P
 	}
 
 	return &PostgresDbClient{
-		DB:      db,
-		timeout: timeout,
+		DB:        db,
+		timeout:   timeout,
+		dataLimit: dataLimit,
 	}, nil
 }
 
@@ -42,12 +44,12 @@ func (pgdb *PostgresDbClient) Save(id string, payload []byte, queueName string) 
 	return err
 }
 
-func (pgdb *PostgresDbClient) Read(consumeCountLimit int, timestamp string, queueName string) ([]model.Message, error) {
+func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueName string) ([]model.Message, error) {
 	var msgs []model.Message
-	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at <= $2; Returning id, payload, consume_count", queueName)
+	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND id > $2 LIMIT $3; Returning id, payload, consume_count", queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
-	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, timestamp)
+	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, lastId, pgdb.dataLimit)
 	if err != nil {
 		return msgs, nil
 	}
@@ -59,12 +61,19 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, timestamp string, queu
 	return msgs, nil
 }
 
-func (pgdb *PostgresDbClient) ReadWithOffset(string, string) ([]model.Message, error) {
+func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timestamp string, queueName string) ([]model.Message, error) {
 	var msgs []model.Message
-	return msgs, nil
-}
-
-func (pgdb *PostgresDbClient) ReadWithOffsetTime(string, string) ([]model.Message, error) {
-	var msgs []model.Message
+	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at < $2 LIMIT $3; Returning id, payload, consume_count", queueName)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
+	defer cancel()
+	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, timestamp, pgdb.dataLimit)
+	if err != nil {
+		return msgs, nil
+	}
+	for rows.Next() {
+		var msg model.Message
+		rows.Scan(&msg.Id, &msg.Payload, &msg.ConsumeCount)
+		msgs = append(msgs, msg)
+	}
 	return msgs, nil
 }
