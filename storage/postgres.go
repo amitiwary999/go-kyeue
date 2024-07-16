@@ -36,6 +36,22 @@ func NewPostgresClient(connectionUrl string, poolLimit int16, timeout int16, dat
 	}, nil
 }
 
+func (pgdb *PostgresDbClient) CreateChannel(queueName string) error {
+	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s
+	(
+		id             string                                NOT NULL PRIMARY KEY,
+	    payload        JSONB                                 NOT NULL,
+		consume_count  INTEGER     DEFAULT 0                 NOT NULL,
+		created_at     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
+	);
+	CREATE INDEX IF NOT EXISTS "%s_created_at_idx" ON %s (created_at);
+	`, queueName, queueName, queueName)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
+	defer cancel()
+	_, err := pgdb.DB.QueryContext(ctx, query)
+	return err
+}
+
 func (pgdb *PostgresDbClient) Save(id string, payload []byte, queueName string) error {
 	query := fmt.Sprintf("INSERT INTO %v(id, payload) VALUES($1, $2)", queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
@@ -63,7 +79,7 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueNa
 
 func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timestamp string, queueName string) ([]model.Message, error) {
 	var msgs []model.Message
-	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at < $2 LIMIT $3; Returning id, payload, consume_count", queueName)
+	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at <= $2 LIMIT $3; Returning id, payload, consume_count", queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
 	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, timestamp, pgdb.dataLimit)
