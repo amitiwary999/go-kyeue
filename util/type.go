@@ -10,3 +10,7 @@ type QueueStorgae interface {
 	Read(int, string) ([]model.Message, error)
 	ReadPrevMessageOnLoad(string, string, string) ([]model.Message, error)
 }
+
+type MessageHandle interface {
+	MessageHandler(model.Message) error
+}
