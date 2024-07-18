@@ -41,6 +41,17 @@ func (c *queueConsumer) ConsumePrevMessage() {
 	} else {
 		latestMsgId := msgs[0].Id
 		c.startPoll <- latestMsgId
-
+		for len(msgs) > 0 {
+			timeStampOffset := msgs[0].CreatedAt
+			for _, msg := range msgs {
+				timeStampOffset = msg.CreatedAt
+				c.handle.MessageHandler(msg)
+			}
+			msgs, err = c.queue.ReadPrevMessageOnLoad(c.consumeCount, timeStampOffset, c.queueName)
+			if err != nil {
+				fmt.Printf("failed to read prev message on %v ", timeStampOffset)
+				break
+			}
+		}
 	}
 }

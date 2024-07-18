@@ -62,7 +62,7 @@ func (pgdb *PostgresDbClient) Save(id string, payload []byte, queueName string) 
 
 func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueName string) ([]model.Message, error) {
 	var msgs []model.Message
-	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND id > $2 LIMIT $3; Returning id, payload, consume_count", queueName)
+	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND id > $2 LIMIT $3; Returning id, payload, consume_count, created_at", queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
 	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, lastId, pgdb.dataLimit)
@@ -71,7 +71,7 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueNa
 	}
 	for rows.Next() {
 		var msg model.Message
-		rows.Scan(&msg.Id, &msg.Payload, &msg.ConsumeCount)
+		rows.Scan(&msg.Id, &msg.Payload, &msg.ConsumeCount, &msg.CreatedAt)
 		msgs = append(msgs, msg)
 	}
 	return msgs, nil
@@ -79,7 +79,7 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueNa
 
 func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timeStamp time.Time, queueName string) ([]model.Message, error) {
 	var msgs []model.Message
-	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at <= $2 ORDER BY created_at DESC LIMIT $3; Returning id, payload, consume_count", queueName)
+	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at <= $2 ORDER BY created_at DESC LIMIT $3; Returning id, payload, consume_count, created_at", queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
 	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, timeStamp, pgdb.dataLimit)
@@ -88,7 +88,7 @@ func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timeS
 	}
 	for rows.Next() {
 		var msg model.Message
-		rows.Scan(&msg.Id, &msg.Payload, &msg.ConsumeCount)
+		rows.Scan(&msg.Id, &msg.Payload, &msg.ConsumeCount, &msg.CreatedAt)
 		msgs = append(msgs, msg)
 	}
 	return msgs, nil
