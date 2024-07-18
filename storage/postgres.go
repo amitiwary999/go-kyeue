@@ -77,12 +77,12 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueNa
 	return msgs, nil
 }
 
-func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timestamp string, queueName string) ([]model.Message, error) {
+func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timeStamp time.Time, queueName string) ([]model.Message, error) {
 	var msgs []model.Message
-	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at <= $2 LIMIT $3; Returning id, payload, consume_count", queueName)
+	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at <= $2 ORDER BY created_at DESC LIMIT $3; Returning id, payload, consume_count", queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
-	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, timestamp, pgdb.dataLimit)
+	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, timeStamp, pgdb.dataLimit)
 	if err != nil {
 		return msgs, nil
 	}
