@@ -1,18 +1,23 @@
 package gokyeue
 
 import (
+	"encoding/json"
 	"time"
-
-	storage "github.com/amitiwary999/go-kyeue/internal/storage"
 )
 
+type Message struct {
+	Id           string
+	Payload      json.RawMessage
+	ConsumeCount int
+	CreatedAt    time.Time
+}
 type QueueStorgae interface {
 	CreateChannel(string) error
 	Save(string, []byte, string) error
-	Read(int, string) ([]storage.Message, error)
-	ReadPrevMessageOnLoad(int, time.Time, string) ([]storage.Message, error)
+	Read(int, string, string) ([]Message, error)
+	ReadPrevMessageOnLoad(int, time.Time, string) ([]Message, error)
 }
 
 type MessageHandle interface {
-	MessageHandler(storage.Message) error
+	MessageHandler(Message) error
 }

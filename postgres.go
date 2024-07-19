@@ -1,4 +1,4 @@
-package storage
+package gokyeue
 
 import (
 	"context"
@@ -13,7 +13,7 @@ type PostgresDbClient struct {
 	dataLimit int16
 }
 
-func NewPostgresClient(connectionUrl string, poolLimit int16, timeout int16, dataLimit int16) (*PostgresDbClient, error) {
+func newPostgresClient(connectionUrl string, poolLimit int16, timeout int16, dataLimit int16) (*PostgresDbClient, error) {
 	db, err := sql.Open("postgres", connectionUrl)
 	if err != nil {
 		return nil, err
