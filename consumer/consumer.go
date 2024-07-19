@@ -10,17 +10,15 @@ import (
 type queueConsumer struct {
 	queue        util.QueueStorgae
 	queueName    string
-	pollInterval int16
 	consumeCount int
 	startPoll    chan string
 	handle       util.MessageHandle
 }
 
-func NewQueueConsumer(queue util.QueueStorgae, queueName string, pollInterval int16, consumeCount int, handle util.MessageHandle) *queueConsumer {
+func NewQueueConsumer(queue util.QueueStorgae, queueName string, consumeCount int, handle util.MessageHandle) *queueConsumer {
 	consumer := &queueConsumer{
 		queue:        queue,
 		queueName:    queueName,
-		pollInterval: pollInterval,
 		consumeCount: consumeCount,
 		startPoll:    make(chan string),
 		handle:       handle,
@@ -30,7 +28,17 @@ func NewQueueConsumer(queue util.QueueStorgae, queueName string, pollInterval in
 }
 
 func (c *queueConsumer) Consume() {
-	<-c.startPoll
+	idOffset := <-c.startPoll
+	for {
+		msgs, err := c.queue.Read(c.consumeCount, idOffset)
+		if err != nil {
+			fmt.Printf("failed to read the message from queue")
+		} else {
+			for _, msg := range msgs {
+				c.handle.MessageHandler(msg)
+			}
+		}
+	}
 }
 
 func (c *queueConsumer) ConsumePrevMessage() {
