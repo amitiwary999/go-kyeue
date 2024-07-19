@@ -5,8 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	model "github.com/amitiwary999/go-kyeue/model"
 )
 
 type PostgresDbClient struct {
@@ -60,8 +58,8 @@ func (pgdb *PostgresDbClient) Save(id string, payload []byte, queueName string) 
 	return err
 }
 
-func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueName string) ([]model.Message, error) {
-	var msgs []model.Message
+func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueName string) ([]Message, error) {
+	var msgs []Message
 	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND id > $2 LIMIT $3; Returning id, payload, consume_count, created_at", queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
@@ -70,15 +68,15 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueNa
 		return msgs, nil
 	}
 	for rows.Next() {
-		var msg model.Message
+		var msg Message
 		rows.Scan(&msg.Id, &msg.Payload, &msg.ConsumeCount, &msg.CreatedAt)
 		msgs = append(msgs, msg)
 	}
 	return msgs, nil
 }
 
-func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timeStamp time.Time, queueName string) ([]model.Message, error) {
-	var msgs []model.Message
+func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timeStamp time.Time, queueName string) ([]Message, error) {
+	var msgs []Message
 	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE consume_count < $1 AND created_at <= $2 ORDER BY created_at DESC LIMIT $3; Returning id, payload, consume_count, created_at", queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
@@ -87,7 +85,7 @@ func (pgdb *PostgresDbClient) ReadPrevMessageOnLoad(consumeCountLimit int, timeS
 		return msgs, nil
 	}
 	for rows.Next() {
-		var msg model.Message
+		var msg Message
 		rows.Scan(&msg.Id, &msg.Payload, &msg.ConsumeCount, &msg.CreatedAt)
 		msgs = append(msgs, msg)
 	}

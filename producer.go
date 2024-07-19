@@ -1,17 +1,16 @@
-package producer
+package gokyeue
 
 import (
 	"encoding/json"
 
-	util "github.com/amitiwary999/go-kyeue/util"
 	"github.com/oklog/ulid/v2"
 )
 
 type queueProducer struct {
-	queue util.QueueStorgae
+	queue QueueStorgae
 }
 
-func NewQueueProducer(queue util.QueueStorgae) *queueProducer {
+func NewQueueProducer(queue QueueStorgae) *queueProducer {
 	return &queueProducer{
 		queue: queue,
 	}

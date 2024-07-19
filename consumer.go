@@ -1,21 +1,19 @@
-package consumer
+package gokyeue
 
 import (
 	"fmt"
 	"time"
-
-	util "github.com/amitiwary999/go-kyeue/util"
 )
 
 type queueConsumer struct {
-	queue        util.QueueStorgae
+	queue        QueueStorgae
 	queueName    string
 	consumeCount int
 	startPoll    chan string
-	handle       util.MessageHandle
+	handle       MessageHandle
 }
 
-func NewQueueConsumer(queue util.QueueStorgae, queueName string, consumeCount int, handle util.MessageHandle) *queueConsumer {
+func NewQueueConsumer(queue QueueStorgae, queueName string, consumeCount int, handle MessageHandle) *queueConsumer {
 	consumer := &queueConsumer{
 		queue:        queue,
 		queueName:    queueName,
