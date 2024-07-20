@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
+
+	_ "github.com/lib/pq"
 )
 
 type PostgresDbClient struct {
@@ -37,7 +39,7 @@ func newPostgresClient(connectionUrl string, poolLimit int16, timeout int16, dat
 func (pgdb *PostgresDbClient) CreateChannel(queueName string) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s
 	(
-		id             string                                NOT NULL PRIMARY KEY,
+		id             varchar(50)                                NOT NULL PRIMARY KEY,
 	    payload        JSONB                                 NOT NULL,
 		consume_count  INTEGER     DEFAULT 0                 NOT NULL,
 		created_at     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
