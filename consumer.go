@@ -21,14 +21,15 @@ func NewQueueConsumer(queue QueueStorgae, queueName string, consumeCount int, ha
 		startPoll:    make(chan string),
 		handle:       handle,
 	}
-	consumer.ConsumePrevMessage()
+	go consumer.ConsumePrevMessage()
+	go consumer.Consume()
 	return consumer
 }
 
 func (c *queueConsumer) Consume() {
 	idOffset := <-c.startPoll
 	for {
-		msgs, err := c.queue.Read(c.consumeCount, idOffset)
+		msgs, err := c.queue.Read(c.consumeCount, idOffset, c.queueName)
 		if err != nil {
 			fmt.Printf("failed to read the message from queue")
 		} else {
