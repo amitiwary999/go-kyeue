@@ -1,6 +1,7 @@
 package gokyeue
 
 import (
+	"context"
 	"fmt"
 	"time"
 )
@@ -24,16 +25,21 @@ func NewQueueConsumer(queue QueueStorgae, queueName string, consumeCount int, ha
 	return consumer
 }
 
-func (c *queueConsumer) Consume() {
+func (c *queueConsumer) Consume(ctx context.Context) {
 	go c.ConsumePrevMessage()
 	idOffset := <-c.startPoll
 	for {
-		msgs, err := c.queue.Read(c.consumeCount, idOffset, c.queueName)
-		if err != nil {
-			fmt.Printf("failed to read the message from queue")
-		} else {
-			for _, msg := range msgs {
-				c.handle.MessageHandler(msg)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			msgs, err := c.queue.Read(c.consumeCount, idOffset, c.queueName)
+			if err != nil {
+				fmt.Printf("failed to read the message from queue %v \n", err)
+			} else {
+				for _, msg := range msgs {
+					c.handle.MessageHandler(msg)
+				}
 			}
 		}
 	}
@@ -43,6 +49,8 @@ func (c *queueConsumer) ConsumePrevMessage() {
 	msgs, err := c.queue.ReadPrevMessageOnLoad(c.consumeCount, time.Now(), c.queueName)
 	if err != nil {
 		fmt.Printf("failed to read prev message on %v err %v", time.Now(), err)
+		c.startPoll <- "0"
+	} else if len(msgs) == 0 {
 		c.startPoll <- "0"
 	} else {
 		latestMsgId := msgs[0].Id
