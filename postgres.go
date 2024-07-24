@@ -62,7 +62,7 @@ func (pgdb *PostgresDbClient) Save(id string, payload []byte, queueName string) 
 
 func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueName string) ([]Message, error) {
 	var msgs []Message
-	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE id in (SELECT id FROM %v WHERE consume_count < $1 AND id > $2 LIMIT $3) Returning id, payload, consume_count, created_at", queueName, queueName)
+	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE id in (SELECT id FROM %v WHERE consume_count < $1 AND id > $2 AND created_at >= NOW() - INTERVAL '7 days' LIMIT $3) Returning id, payload, consume_count, created_at", queueName, queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
 	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, lastId, pgdb.dataLimit)
