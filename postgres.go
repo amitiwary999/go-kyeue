@@ -39,12 +39,30 @@ func newPostgresClient(connectionUrl string, poolLimit int16, timeout int16, dat
 func (pgdb *PostgresDbClient) CreateChannel(queueName string) error {
 	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s
 	(
-		id             varchar(50)                                NOT NULL PRIMARY KEY,
+		id             varchar(50)                           NOT NULL PRIMARY KEY,
 	    payload        JSONB                                 NOT NULL,
 		consume_count  INTEGER     DEFAULT 0                 NOT NULL,
 		created_at     TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP NOT NULL
 	);
 	CREATE INDEX IF NOT EXISTS "%s_created_at_idx" ON %s (created_at);
+	`, queueName, queueName, queueName)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
+	defer cancel()
+	_, err := pgdb.DB.QueryContext(ctx, query)
+	return err
+}
+
+func (pgdb *PostgresDbClient) CreateDeadLetterQueue(queueName string) error {
+	query := fmt.Sprintf(`CREATE TABLE IF NOT EXISTS %s (
+	  id              UUID            DEFAULT gen_random_uuid()        NOT NULL PRIMARY KEY,
+	  queue_name      varchar(75)                                  NOT NULL,
+	  message_id      varchar(50)                                  NOT NULL,
+	  payload         JSONB                                        NOT NULL,
+	  attemp_count    INTEGER         DEFAULT 0                    NOT NULL,
+	  error           TEXT,
+	  created_at      TIMESSTAMPTZ    DEFAULT CURRENT_TIMESTAMP    NOT NULL        
+	);
+	CREATED UNIQUE INDEX IF NOT EXISTS "%s_queue_name_message_id_unique_idx" ON %s (queue_name, message_id);
 	`, queueName, queueName, queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()

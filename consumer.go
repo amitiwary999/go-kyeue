@@ -6,10 +6,11 @@ import (
 )
 
 type queueConsumer struct {
-	queue        QueueStorgae
-	queueName    string
-	consumeCount int
-	handle       MessageHandle
+	queue           QueueStorgae
+	queueName       string
+	consumeCount    int
+	handle          MessageHandle
+	deadLetterQueue string
 }
 
 func NewQueueConsumer(queue QueueStorgae, queueName string, consumeCount int, handle MessageHandle) *queueConsumer {
@@ -20,6 +21,18 @@ func NewQueueConsumer(queue QueueStorgae, queueName string, consumeCount int, ha
 		handle:       handle,
 	}
 	return consumer
+}
+
+func (c *queueConsumer) AddDeadLetterQueue() {
+	const deadLetterQueue = `gokyeue_dead_letter_queue`
+	err := c.queue.CreateDeadLetterQueue(deadLetterQueue)
+	if err == nil {
+		c.deadLetterQueue = deadLetterQueue
+	}
+}
+
+func (c *queueConsumer) handleMessage(msg Message) {
+
 }
 
 func (c *queueConsumer) Consume(ctx context.Context) error {
