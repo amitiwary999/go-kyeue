@@ -28,11 +28,20 @@ func (c *queueConsumer) AddDeadLetterQueue() {
 	err := c.queue.CreateDeadLetterQueue(deadLetterQueue)
 	if err == nil {
 		c.deadLetterQueue = deadLetterQueue
+	} else {
+		fmt.Printf("failed to created dead letter queue, error %v \n", err)
 	}
 }
 
 func (c *queueConsumer) handleMessage(msg Message) {
-
+	err := c.handle.MessageHandler(msg)
+	if err != nil {
+		fmt.Printf("failed to process message %v \n", err)
+		err = c.queue.SaveDeadLetterQueue(c.queueName, msg, err.Error())
+		if err != nil {
+			fmt.Printf("failed to save in dead letter queue msg id %s \n", msg.Id)
+		}
+	}
 }
 
 func (c *queueConsumer) Consume(ctx context.Context) error {
@@ -50,9 +59,11 @@ func (c *queueConsumer) Consume(ctx context.Context) error {
 				fmt.Printf("failed to read the message from queue %v \n", err)
 			} else {
 				for _, msg := range msgs {
-					c.handle.MessageHandler(msg)
+					go c.handleMessage(msg)
 				}
-				idOffset = msgs[len(msgs)-1].Id
+				if len(msgs) > 0 {
+					idOffset = msgs[len(msgs)-1].Id
+				}
 			}
 		}
 	}

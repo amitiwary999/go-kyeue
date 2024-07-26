@@ -60,9 +60,9 @@ func (pgdb *PostgresDbClient) CreateDeadLetterQueue(queueName string) error {
 	  payload         JSONB                                        NOT NULL,
 	  attemp_count    INTEGER         DEFAULT 0                    NOT NULL,
 	  error           TEXT,
-	  created_at      TIMESSTAMPTZ    DEFAULT CURRENT_TIMESTAMP    NOT NULL        
+	  created_at      TIMESTAMPTZ    DEFAULT CURRENT_TIMESTAMP    NOT NULL        
 	);
-	CREATED UNIQUE INDEX IF NOT EXISTS "%s_queue_name_message_id_unique_idx" ON %s (queue_name, message_id);
+	CREATE UNIQUE INDEX IF NOT EXISTS "%s_queue_name_message_id_unique_idx" ON %s (queue_name, message_id);
 	`, queueName, queueName, queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
@@ -96,4 +96,12 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueNa
 		msgs = append(msgs, msg)
 	}
 	return msgs, nil
+}
+
+func (pgdb *PostgresDbClient) SaveDeadLetterQueue(queueName string, msg Message, errMsg string) error {
+	query := fmt.Sprintf("INSERT INTO %s(queue_name, message_id, payload, error) VALUES($1, $2, $3, $4) ON CONFLICT (queue_name, message_id) DO UPDATE SET error = EXCLUDED.error, attemp_count = %s.attemp_count + 1", queueName, queueName)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
+	defer cancel()
+	_, err := pgdb.DB.QueryContext(ctx, query, queueName, msg.Id, msg.Payload, errMsg)
+	return err
 }

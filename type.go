@@ -14,6 +14,7 @@ type Message struct {
 type QueueStorgae interface {
 	CreateChannel(string) error
 	CreateDeadLetterQueue(string) error
+	SaveDeadLetterQueue(queueName string, msg Message, errMsg string) error
 	Save(string, []byte, string) error
 	Read(int, string, string) ([]Message, error)
 }
