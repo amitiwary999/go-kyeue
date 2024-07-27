@@ -10,12 +10,11 @@ import (
 )
 
 type PostgresDbClient struct {
-	DB        *sql.DB
-	timeout   int16
-	dataLimit int16
+	DB      *sql.DB
+	timeout int16
 }
 
-func newPostgresClient(connectionUrl string, poolLimit int16, timeout int16, dataLimit int16) (*PostgresDbClient, error) {
+func newPostgresClient(connectionUrl string, poolLimit int16, timeout int16) (*PostgresDbClient, error) {
 	db, err := sql.Open("postgres", connectionUrl)
 	if err != nil {
 		return nil, err
@@ -30,9 +29,8 @@ func newPostgresClient(connectionUrl string, poolLimit int16, timeout int16, dat
 	}
 
 	return &PostgresDbClient{
-		DB:        db,
-		timeout:   timeout,
-		dataLimit: dataLimit,
+		DB:      db,
+		timeout: timeout,
 	}, nil
 }
 
@@ -78,12 +76,12 @@ func (pgdb *PostgresDbClient) Save(id string, payload []byte, queueName string) 
 	return err
 }
 
-func (pgdb *PostgresDbClient) Read(consumeCountLimit int, lastId string, queueName string) ([]Message, error) {
+func (pgdb *PostgresDbClient) Read(consumeCountLimit int, limit int64, lastId string, queueName string) ([]Message, error) {
 	var msgs []Message
 	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE id in (SELECT id FROM %v WHERE consume_count < $1 AND id > $2 AND created_at >= NOW() - INTERVAL '7 days' LIMIT $3) Returning id, payload, consume_count, created_at", queueName, queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
-	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, lastId, pgdb.dataLimit)
+	rows, err := pgdb.DB.QueryContext(ctx, query, consumeCountLimit, lastId, limit)
 	if err != nil {
 		return msgs, err
 	}

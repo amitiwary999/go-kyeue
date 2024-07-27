@@ -7,7 +7,7 @@ import (
 )
 
 func TestPublisher(t *testing.T) {
-	queue, err := kyeue.InitStorage("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", 10, 10, 100)
+	queue, err := kyeue.InitStorage("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable", 10, 10)
 	if err != nil {
 		t.Errorf("failed to create storage %v ", err)
 	} else {
