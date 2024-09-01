@@ -1,4 +1,4 @@
-package gokyeue
+package util
 
 import (
 	"errors"
@@ -16,7 +16,7 @@ type pgError interface {
 	SQLState() string
 }
 
-func isPgNonRecoveredError(err error) bool {
+func IsPgNonRecoveredError(err error) bool {
 	var pgErr pgError
 	if ok := errors.As(err, &pgErr); !ok {
 		return false

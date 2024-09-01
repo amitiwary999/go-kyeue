@@ -1,27 +1,29 @@
-package gokyeue
+package consumer
 
 import (
 	"context"
 	"fmt"
 	"sync"
 
+	"github.com/amitiwary999/go-kyeue/model"
+	"github.com/amitiwary999/go-kyeue/util"
 	"golang.org/x/sync/semaphore"
 )
 
 var mu sync.Mutex
 
 type queueConsumer struct {
-	queue               QueueStorgae
+	queue               model.QueueStorgae
 	queueName           string
 	consumeCount        int
-	handle              MessageHandle
+	handle              model.MessageHandle
 	deadLetterQueue     string
 	messageProcessLimit int64
 	weightedSem         *semaphore.Weighted
 	messageFetchLimit   int64
 }
 
-func NewQueueConsumer(queue QueueStorgae, queueName string, consumeCount int, handle MessageHandle) *queueConsumer {
+func NewQueueConsumer(queue model.QueueStorgae, queueName string, consumeCount int, handle model.MessageHandle) *queueConsumer {
 	consumer := &queueConsumer{
 		queue:             queue,
 		queueName:         queueName,
@@ -67,7 +69,7 @@ func (c *queueConsumer) AddDeadLetterQueue() {
 	}
 }
 
-func (c *queueConsumer) handleMessage(msg Message) {
+func (c *queueConsumer) handleMessage(msg model.Message) {
 	defer c.weightedSem.Release(1)
 	err := c.handle.MessageHandler(msg)
 	if err != nil {
@@ -92,7 +94,7 @@ func (c *queueConsumer) Consume(ctx context.Context) error {
 			}
 			msgs, err := c.queue.Read(c.consumeCount, limit, idOffset, c.queueName)
 			if err != nil {
-				if isPgNonRecoveredError(err) {
+				if util.IsPgNonRecoveredError(err) {
 					return err
 				}
 				fmt.Printf("failed to read the message from queue %v \n", err)

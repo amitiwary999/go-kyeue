@@ -1,4 +1,4 @@
-package gokyeue
+package storage
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/amitiwary999/go-kyeue/model"
 	_ "github.com/lib/pq"
 )
 
@@ -14,7 +15,7 @@ type PostgresDbClient struct {
 	timeout int16
 }
 
-func newPostgresClient(connectionUrl string, poolLimit int16, timeout int16) (*PostgresDbClient, error) {
+func NewPostgresClient(connectionUrl string, poolLimit int16, timeout int16) (*PostgresDbClient, error) {
 	db, err := sql.Open("postgres", connectionUrl)
 	if err != nil {
 		return nil, err
@@ -76,8 +77,8 @@ func (pgdb *PostgresDbClient) Save(id string, payload []byte, queueName string) 
 	return err
 }
 
-func (pgdb *PostgresDbClient) Read(consumeCountLimit int, limit int64, lastId string, queueName string) ([]Message, error) {
-	var msgs []Message
+func (pgdb *PostgresDbClient) Read(consumeCountLimit int, limit int64, lastId string, queueName string) ([]model.Message, error) {
+	var msgs []model.Message
 	query := fmt.Sprintf("UPDATE %v SET consume_count = consume_count + 1 WHERE id in (SELECT id FROM %v WHERE consume_count < $1 AND id > $2 AND created_at >= NOW() - INTERVAL '7 days' LIMIT $3) Returning id, payload, consume_count, created_at", queueName, queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()
@@ -86,7 +87,7 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, limit int64, lastId st
 		return msgs, err
 	}
 	for rows.Next() {
-		var msg Message
+		var msg model.Message
 		err = rows.Scan(&msg.Id, &msg.Payload, &msg.ConsumeCount, &msg.CreatedAt)
 		if err != nil {
 			return msgs, err
@@ -96,7 +97,7 @@ func (pgdb *PostgresDbClient) Read(consumeCountLimit int, limit int64, lastId st
 	return msgs, nil
 }
 
-func (pgdb *PostgresDbClient) SaveDeadLetterQueue(queueName string, msg Message, errMsg string) error {
+func (pgdb *PostgresDbClient) SaveDeadLetterQueue(queueName string, msg model.Message, errMsg string) error {
 	query := fmt.Sprintf("INSERT INTO %s(queue_name, message_id, payload, error) VALUES($1, $2, $3, $4) ON CONFLICT (queue_name, message_id) DO UPDATE SET error = EXCLUDED.error, attemp_count = %s.attemp_count + 1", queueName, queueName)
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(pgdb.timeout)*time.Second)
 	defer cancel()

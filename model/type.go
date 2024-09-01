@@ -1,4 +1,4 @@
-package gokyeue
+package model
 
 import (
 	"encoding/json"
