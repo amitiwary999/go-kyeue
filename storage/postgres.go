@@ -104,3 +104,7 @@ func (pgdb *PostgresDbClient) SaveDeadLetterQueue(queueName string, msg model.Me
 	_, err := pgdb.DB.QueryContext(ctx, query, queueName, msg.Id, msg.Payload, errMsg)
 	return err
 }
+
+func (pgdb *PostgresDbClient) Close() error {
+	return pgdb.DB.Close()
+}

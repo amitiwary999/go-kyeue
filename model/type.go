@@ -17,6 +17,7 @@ type QueueStorgae interface {
 	SaveDeadLetterQueue(queueName string, msg Message, errMsg string) error
 	Save(string, []byte, string) error
 	Read(int, int64, string, string) ([]Message, error)
+	Close() error
 }
 
 type MessageHandle interface {
