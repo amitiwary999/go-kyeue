@@ -23,6 +23,7 @@ func TestConsumer(t *testing.T) {
 		t.Errorf("failed to create storage %v ", err)
 	} else {
 		consumer := consumer.NewQueueConsumer(queue, "test_queue", 1, &Handler{})
+		consumer.SetLimit(30, 3)
 		ctx, _ := context.WithTimeout(context.Background(), time.Duration(3*time.Second))
 		consumer.Consume(ctx)
 	}

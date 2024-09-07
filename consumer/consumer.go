@@ -13,14 +13,13 @@ import (
 var mu sync.Mutex
 
 type queueConsumer struct {
-	queue               model.QueueStorgae
-	queueName           string
-	consumeCount        int
-	handle              model.MessageHandle
-	deadLetterQueue     string
-	messageProcessLimit int64
-	weightedSem         *semaphore.Weighted
-	messageFetchLimit   int64
+	queue             model.QueueStorgae
+	queueName         string
+	consumeCount      int
+	handle            model.MessageHandle
+	deadLetterQueue   string
+	weightedSem       *semaphore.Weighted
+	messageFetchLimit int64
 }
 
 func NewQueueConsumer(queue model.QueueStorgae, queueName string, consumeCount int, handle model.MessageHandle) *queueConsumer {
@@ -34,18 +33,14 @@ func NewQueueConsumer(queue model.QueueStorgae, queueName string, consumeCount i
 	return consumer
 }
 
-func (c *queueConsumer) SetMaxMessage(count int64) {
-	c.messageProcessLimit = count
-	sem := semaphore.NewWeighted(int64(count))
+func (c *queueConsumer) SetLimit(weightLimit, fetchLimit int64) {
+	sem := semaphore.NewWeighted(int64(weightLimit))
 	c.weightedSem = sem
-}
-
-func (c *queueConsumer) SetMessageFetchLimit(count int64) {
-	c.messageFetchLimit = count
+	c.messageFetchLimit = fetchLimit
 }
 
 func (c *queueConsumer) blockWeight(ctx context.Context, weight int64) (int64, error) {
-	if c.messageProcessLimit == 0 {
+	if c.weightedSem == nil {
 		return weight, nil
 	}
 	for i := weight; i > 1; i = i - 10 {
