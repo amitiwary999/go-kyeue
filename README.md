@@ -33,7 +33,13 @@ import (
 )
 
 consumer := kyeueConsumer.NewQueueConsumer(queue, "queue_name", consume_count, &Handler{})
+/**
+ here timeout is used so that after timeout context is done. Otherwise code will stuck at consumer.Consume
+ */
 ctx, _ := context.WithTimeout(context.Background(), time.Duration(3*time.Second))
+/** 
+A better way is to run this in separate goroutine. like go consumer.Consume(ctx). Make sure that program doesn't exit otherwise consumer will not be able to handle message
+*/
 consumer.Consume(ctx)
 ```
 
