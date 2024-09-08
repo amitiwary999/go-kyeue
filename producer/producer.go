@@ -8,10 +8,10 @@ import (
 )
 
 type queueProducer struct {
-	queue model.QueueStorgae
+	queue model.QueueStorage
 }
 
-func NewQueueProducer(queue model.QueueStorgae) *queueProducer {
+func NewQueueProducer(queue model.QueueStorage) *queueProducer {
 	return &queueProducer{
 		queue: queue,
 	}

@@ -13,7 +13,7 @@ import (
 var mu sync.Mutex
 
 type queueConsumer struct {
-	queue             model.QueueStorgae
+	queue             model.QueueStorage
 	queueName         string
 	consumeCount      int
 	handle            model.MessageHandle
@@ -22,7 +22,7 @@ type queueConsumer struct {
 	messageFetchLimit int64
 }
 
-func NewQueueConsumer(queue model.QueueStorgae, queueName string, consumeCount int, handle model.MessageHandle) *queueConsumer {
+func NewQueueConsumer(queue model.QueueStorage, queueName string, consumeCount int, handle model.MessageHandle) *queueConsumer {
 	consumer := &queueConsumer{
 		queue:             queue,
 		queueName:         queueName,

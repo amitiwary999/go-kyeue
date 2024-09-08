@@ -11,7 +11,7 @@ type Message struct {
 	ConsumeCount int
 	CreatedAt    time.Time
 }
-type QueueStorgae interface {
+type QueueStorage interface {
 	CreateChannel(string) error
 	CreateDeadLetterQueue(string) error
 	SaveDeadLetterQueue(queueName string, msg Message, errMsg string) error
